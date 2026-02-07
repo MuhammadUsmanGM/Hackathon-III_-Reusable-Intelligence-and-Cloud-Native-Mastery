@@ -13,6 +13,7 @@ from .code_execution.code_executor import execute_code
 from .kafka.kafka_service import kafka_service, send_user_interaction, send_progress_update, send_ai_interaction
 from .database.db_service import db_service, get_db_service
 from .dapr_service import dapr_service
+from .telemetry_service import analyze_student_telemetry
 from ..models.user import UserCreate
 from ..models.progress import ProgressUpdate
 
@@ -110,6 +111,15 @@ class LearnFlowService:
                     "execution_time": execution_result["execution_time"]
                 }
             )
+
+            # Add real-time telemetry analysis
+            await analyze_student_telemetry(user_id, {
+                "interaction_type": "code_execution",
+                "timestamp": datetime.utcnow().isoformat(),
+                "data": {
+                    "execution_status": execution_result["status"]
+                }
+            })
 
             return execution_result
         except Exception as e:

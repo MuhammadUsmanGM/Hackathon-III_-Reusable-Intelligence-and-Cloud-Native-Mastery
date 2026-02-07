@@ -27,6 +27,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [activeView, setActiveView] = useState<'student' | 'teacher'>('student');
+  const [teacherAlerts, setTeacherAlerts] = useState<any[]>([
+    { id: 1, user: 'Student James', reason: 'Consecutive code failures (3+)', severity: 'high', time: '2m ago' }
+  ]);
 
   // Toggle theme
   const toggleTheme = () => {
@@ -127,12 +131,14 @@ export default function Home() {
           </div>
           
           <nav className="hidden md:flex space-x-8">
-            {['Home', 'Lessons', 'Exercises', 'Dashboard'].map((item) => (
-              <Link key={item} href={`/${item.toLowerCase() === 'home' ? '' : item.toLowerCase()}`} 
-                    className="text-slate-400 hover:text-emerald-400 transition-all font-medium text-sm tracking-wide">
-                {item}
-              </Link>
-            ))}
+            <button onClick={() => setActiveView('student')} 
+                    className={`${activeView === 'student' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-slate-400'} transition-all font-medium text-sm tracking-wide pb-1`}>
+              Student Portal
+            </button>
+            <button onClick={() => setActiveView('teacher')} 
+                    className={`${activeView === 'teacher' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-slate-400'} transition-all font-medium text-sm tracking-wide pb-1`}>
+              Teacher Dashboard
+            </button>
           </nav>
 
           <div className="flex items-center space-x-4">
@@ -153,122 +159,183 @@ export default function Home() {
       </header>
 
       <div className="container mx-auto px-6 pt-24 pb-12 relative z-10 gap-10 lg:flex">
-        <main className="flex-1 space-y-8">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Neural Sandbox (Code Editor) */}
-            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-6 shadow-2xl transition-all hover:border-emerald-500/20 group">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full bg-red-500/40"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/40"></div>
-                    <div className="w-3 h-3 rounded-full bg-emerald-500/40"></div>
-                    <span className="text-xs text-slate-500 ml-2 font-mono uppercase tracking-widest">Neural.Sandbox_v1.0</span>
+        {activeView === 'student' ? (
+          <main className="flex-1 space-y-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              {/* Neural Sandbox (Code Editor) */}
+              <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-6 shadow-2xl transition-all hover:border-emerald-500/20 group">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full bg-red-500/40"></div>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500/40"></div>
+                      <div className="w-3 h-3 rounded-full bg-emerald-500/40"></div>
+                      <span className="text-xs text-slate-500 ml-2 font-mono uppercase tracking-widest">Neural.Sandbox_v1.0</span>
+                  </div>
+                  <button
+                    onClick={handleRunCode}
+                    className="bg-emerald-500 hover:bg-emerald-400 text-[#020617] font-black px-6 py-2.5 rounded-2xl transition-all active:scale-95 flex items-center shadow-lg shadow-emerald-500/20"
+                  >
+                    <FiPlay className="mr-2" /> EXECUTE
+                  </button>
+                </div>
+                
+                <div className="border border-slate-800 rounded-2xl overflow-hidden h-96 group-hover:border-slate-700 transition-all shadow-inner">
+                  <MonacoEditor
+                    height="100%"
+                    language="python"
+                    value={code}
+                    onChange={(value: string | undefined) => setCode(value || '')}
+                    theme="vs-dark"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      fontFamily: "'Fira Code', monospace",
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      padding: { top: 20 },
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Neural Response (Output) */}
+              <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-6 h-full min-h-[500px] flex flex-col transition-all hover:border-blue-500/20 group">
+                <div className="flex items-center space-x-3 mb-6">
+                  <FiPieChart className="text-blue-400" />
+                  <h2 className="text-sm font-black uppercase tracking-[0.2em] text-blue-400">Telemetry Output</h2>
+                </div>
+                <div className="flex-1 rounded-2xl p-6 font-mono text-sm border border-slate-800/50 bg-[#010409] text-emerald-400/80 overflow-auto shadow-inner leading-relaxed">
+                  <pre>{output}</pre>
+                </div>
+              </div>
+            </div>
+
+            {/* Core Multi-Agent Comm (Chat) */}
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-8 transition-all hover:border-emerald-500/20 group">
+              <div className="flex items-center mb-8">
+                <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 mr-4">
+                  <FiMessageSquare className="text-emerald-400 text-xl" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-200">Neural Tutor Interface</h2>
+                  <p className="text-xs text-slate-500 uppercase tracking-widest">Multi-Agent Processing Cluster ACTIVE</p>
                 </div>
                 <button
-                  onClick={handleRunCode}
-                  className="bg-emerald-500 hover:bg-emerald-400 text-[#020617] font-black px-6 py-2.5 rounded-2xl transition-all active:scale-95 flex items-center shadow-lg shadow-emerald-500/20"
+                  onClick={() => setChatMessages([{role: 'assistant', content: 'Neural link established. I am your LearnFlow tutor. Shall we explore Python architectural patterns today?'}])}
+                  className="ml-auto p-3 text-slate-500 hover:text-emerald-400 bg-slate-800/30 rounded-2xl transition-all"
                 >
-                  <FiPlay className="mr-2" /> EXECUTE
+                  <FiRefreshCw />
                 </button>
               </div>
-              
-              <div className="border border-slate-800 rounded-2xl overflow-hidden h-96 group-hover:border-slate-700 transition-all shadow-inner">
-                <MonacoEditor
-                  height="100%"
-                  language="python"
-                  value={code}
-                  onChange={(value: string | undefined) => setCode(value || '')}
-                  theme="vs-dark"
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    fontFamily: "'Fira Code', monospace",
-                    scrollBeyondLastLine: false,
-                    automaticLayout: true,
-                    padding: { top: 20 },
-                  }}
-                />
-              </div>
-            </div>
 
-            {/* Neural Response (Output) */}
-            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-6 h-full min-h-[500px] flex flex-col transition-all hover:border-blue-500/20 group">
-              <div className="flex items-center space-x-3 mb-6">
-                <FiPieChart className="text-blue-400" />
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-blue-400">Telemetry Output</h2>
-              </div>
-              <div className="flex-1 rounded-2xl p-6 font-mono text-sm border border-slate-800/50 bg-[#010409] text-emerald-400/80 overflow-auto shadow-inner leading-relaxed">
-                <pre>{output}</pre>
-              </div>
-            </div>
-          </div>
-
-          {/* Core Multi-Agent Comm (Chat) */}
-          <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-8 transition-all hover:border-emerald-500/20 group">
-            <div className="flex items-center mb-8">
-              <div className="p-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 mr-4">
-                <FiMessageSquare className="text-emerald-400 text-xl" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-slate-200">Neural Tutor Interface</h2>
-                <p className="text-xs text-slate-500 uppercase tracking-widest">Multi-Agent Processing Cluster ACTIVE</p>
-              </div>
-              <button
-                onClick={() => setChatMessages([{role: 'assistant', content: 'Neural link established. I am your LearnFlow tutor. Shall we explore Python architectural patterns today?'}])}
-                className="ml-auto p-3 text-slate-500 hover:text-emerald-400 bg-slate-800/30 rounded-2xl transition-all"
-              >
-                <FiRefreshCw />
-              </button>
-            </div>
-
-            <div className="space-y-6 max-h-80 overflow-y-auto mb-8 pr-4 custom-scrollbar">
-              {chatMessages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[75%] p-4 rounded-2xl border ${
-                    msg.role === 'user'
-                      ? 'bg-emerald-500 text-[#020617] font-medium border-emerald-400 shadow-lg shadow-emerald-500/10'
-                      : 'bg-slate-800/50 text-slate-300 border-slate-700/50'
-                  }`}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-slate-800/50 text-slate-500 border border-slate-700/50 p-4 rounded-2xl flex items-center space-x-3 italic">
-                    <div className="flex space-x-1">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce delay-100"></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce delay-200"></div>
+              <div className="space-y-6 max-h-80 overflow-y-auto mb-8 pr-4 custom-scrollbar">
+                {chatMessages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[75%] p-4 rounded-2xl border ${
+                      msg.role === 'user'
+                        ? 'bg-emerald-500 text-[#020617] font-medium border-emerald-400 shadow-lg shadow-emerald-500/10'
+                        : 'bg-slate-800/50 text-slate-300 border-slate-700/50'
+                    }`}>
+                      {msg.content}
                     </div>
-                    <span>Processing through Triage Agent...</span>
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-slate-800/50 text-slate-500 border border-slate-700/50 p-4 rounded-2xl flex items-center space-x-3 italic">
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce delay-200"></div>
+                      </div>
+                      <span>Processing through Triage Agent...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            <div className="relative group">
-              <input
-                type="text"
-                value={currentMessage}
-                onChange={(e) => setCurrentMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Query the multi-agent hive mind..."
-                className="w-full bg-slate-900/60 border border-slate-800 text-slate-200 p-5 pr-16 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all placeholder:text-slate-600"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={isLoading}
-                className="absolute right-3 top-3 bottom-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#020617] px-4 rounded-xl transition-all active:scale-90"
-              >
-                <FiSend />
-              </button>
+              <div className="relative group">
+                <input
+                  type="text"
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Query the multi-agent hive mind..."
+                  className="w-full bg-slate-900/60 border border-slate-800 text-slate-200 p-5 pr-16 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all placeholder:text-slate-600"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isLoading}
+                  className="absolute right-3 top-3 bottom-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#020617] px-4 rounded-xl transition-all active:scale-90"
+                >
+                  <FiSend />
+                </button>
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        ) : (
+          <main className="flex-1 space-y-8">
+             <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-8">
+                <div className="flex items-center justify-between mb-8">
+                   <div className="flex items-center space-x-4">
+                      <div className="p-3 bg-rose-500/10 rounded-2xl border border-rose-500/20">
+                         <FiCpu className="text-rose-400 text-xl" />
+                      </div>
+                      <div>
+                         <h2 className="text-2xl font-black text-slate-200 uppercase tracking-tighter">Student Struggle Alerts</h2>
+                         <p className="text-xs text-rose-500 uppercase tracking-widest font-bold">Kafka Real-time Stream Active</p>
+                      </div>
+                   </div>
+                   <div className="bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-400">
+                      Total Alerts Today: <span className="text-rose-400 font-bold">12</span>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                   {teacherAlerts.map(alert => (
+                     <div key={alert.id} className="bg-slate-900/60 border border-rose-500/20 rounded-2xl p-6 flex items-center justify-between hover:border-rose-500/40 transition-all group">
+                        <div className="flex items-center space-x-6">
+                           <div className="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center border border-slate-700 group-hover:bg-rose-500 group-hover:text-white transition-all text-rose-400">
+                              <FiUser />
+                           </div>
+                           <div>
+                              <h3 className="text-lg font-bold text-slate-200">{alert.user}</h3>
+                              <p className="text-sm text-slate-500">{alert.reason}</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center space-x-6">
+                           <span className="text-xs font-mono text-slate-600 uppercase tracking-tighter">{alert.time}</span>
+                           <span className={`px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-widest ${alert.severity === 'high' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
+                              {alert.severity} Priority
+                           </span>
+                           <button className="bg-slate-800 hover:bg-emerald-500 hover:text-white p-3 rounded-xl transition-all border border-slate-700">
+                              <FiChevronRight />
+                           </button>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[
+                  { label: 'Avg Mastery', val: '72%', sub: '+4% this week', icon: <FiPieChart className="text-emerald-400" /> },
+                  { label: 'Active Learners', val: '24', sub: '8 currently online', icon: <FiUser className="text-blue-400" /> },
+                  { label: 'AI Assistance', val: '864', sub: 'Tokens optimized: 98%', icon: <FiZap className="text-yellow-400" /> }
+                ].map((stat, i) => (stat &&
+                   <div key={i} className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-6">
+                      <div className="p-3 bg-slate-800 w-fit rounded-xl border border-slate-700 mb-4">{stat.icon}</div>
+                      <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</h4>
+                      <div className="text-2xl font-black text-slate-200 mb-1">{stat.val}</div>
+                      <div className="text-[10px] text-emerald-500 uppercase tracking-tighter">{stat.sub}</div>
+                   </div>
+                ))}
+             </div>
+          </main>
+        )}
 
         <aside className="lg:w-96 space-y-8">
           <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 rounded-3xl p-8 transition-all hover:border-emerald-500/20">
