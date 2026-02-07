@@ -12,6 +12,7 @@ from .ai.ai_service import AIService
 from .code_execution.code_executor import execute_code
 from .kafka.kafka_service import kafka_service, send_user_interaction, send_progress_update, send_ai_interaction
 from .database.db_service import db_service, get_db_service
+from .dapr_service import dapr_service
 from ..models.user import UserCreate
 from ..models.progress import ProgressUpdate
 
@@ -132,6 +133,14 @@ class LearnFlowService:
             User progress information
         """
         try:
+            # Try to get from Dapr first (state cache)
+            dapr_key = f"progress_{user_id}"
+            cached_progress = await dapr_service.get_state(dapr_key)
+            
+            if cached_progress:
+                logger.info(f"Retrieved progress from Dapr for {user_id}")
+                return cached_progress
+
             # Get progress from AI service
             ai_progress = await self.ai_service.get_student_progress(user_id)
 
@@ -144,6 +153,9 @@ class LearnFlowService:
                 "db_progress_records": db_progress,
                 "last_updated": datetime.utcnow().isoformat()
             }
+
+            # Save to Dapr for future requests
+            await dapr_service.save_state(dapr_key, combined_progress)
 
             return combined_progress
         except Exception as e:
@@ -179,12 +191,13 @@ class LearnFlowService:
                 }
             )
 
-            # Update progress in AI service
-            context = {"student_id": user_id, "lesson_id": lesson_id}
-            await self.ai_service.process_tutor_request(
-                f"Update progress for lesson {lesson_id}",
-                context
-            )
+            # Update state in Dapr
+            dapr_key = f"progress_{user_id}"
+            current_progress = await dapr_service.get_state(dapr_key)
+            if current_progress:
+                # Basic update logic - in real apps this would be more sophisticated
+                current_progress["last_updated"] = datetime.utcnow().isoformat()
+                await dapr_service.save_state(dapr_key, current_progress)
 
             return updated_progress
         except Exception as e:
